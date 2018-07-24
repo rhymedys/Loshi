@@ -15,6 +15,7 @@ import 'wepy-async-function'
 
 import { setStore } from 'wepy-redux'
 import configStore from './store'
+import {request} from './utils/request'
 
 const store = configStore()
 setStore(store)
@@ -42,34 +43,32 @@ export default class extends wepy.app {
     this.use('promisify')
   }
 
-  onLaunch() {
-    this.testAsync()
+  onShow () {
+    this.login()
   }
 
-  sleep (s) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        resolve('promise resolved')
-      }, s * 1000)
-    })
+  checkJSESSIONID() {
+    const JSESSIONID = wepy.getStorageSync('JSESSIONID')
+    const expiresLong = wepy.getStorageSync('JSESSIONID_expires')
+
+    return JSESSIONID && expiresLong && expiresLong > new Date().getTime()
   }
 
-  async testAsync () {
-    const data = await this.sleep(3)
-    console.log(data)
-  }
+  async login() {
+    const loginRes = await wepy.login()
+    if (loginRes.code) {
+      const getSessionRes = await request({
+        url: 'login',
+        data: {
+          code: loginRes.code
+        }
+      })
 
-  getUserInfo(cb) {
-    const that = this
-    if (this.globalData.userInfo) {
-      return this.globalData.userInfo
-    }
-    wepy.getUserInfo({
-      success (res) {
-        that.globalData.userInfo = res.userInfo
-        cb && cb(res.userInfo)
+      if (getSessionRes.data.resultCode === 0) {
+        wepy.setStorageSync('JSESSIONID', getSessionRes.data.data.JSESSIONID)
+        wepy.setStorageSync('JSESSIONID_expires', getSessionRes.data.data.expires)
       }
-    })
+    }
   }
 }
 </script>
