@@ -1,2 +1,2 @@
-# rhymedys_wx_demo
+# Loshi
 a simple weixin mini progrom
