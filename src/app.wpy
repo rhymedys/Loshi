@@ -15,7 +15,7 @@ import 'wepy-async-function'
 
 import { setStore } from 'wepy-redux'
 import configStore from './store'
-import {request} from './utils/request'
+import {checkSessionIsOverdueAndLoginAgain} from './utils/session'
 
 const store = configStore()
 setStore(store)
@@ -43,32 +43,8 @@ export default class extends wepy.app {
     this.use('promisify')
   }
 
-  onShow () {
-    this.login()
-  }
-
-  checkJSESSIONID() {
-    const JSESSIONID = wepy.getStorageSync('JSESSIONID')
-    const expiresLong = wepy.getStorageSync('JSESSIONID_expires')
-
-    return JSESSIONID && expiresLong && expiresLong > new Date().getTime()
-  }
-
-  async login() {
-    const loginRes = await wepy.login()
-    if (loginRes.code) {
-      const getSessionRes = await request({
-        url: 'login',
-        data: {
-          code: loginRes.code
-        }
-      })
-
-      if (getSessionRes.data.resultCode === 0) {
-        wepy.setStorageSync('JSESSIONID', getSessionRes.data.data.JSESSIONID)
-        wepy.setStorageSync('JSESSIONID_expires', getSessionRes.data.data.expires)
-      }
-    }
+  async onShow () {
+    await checkSessionIsOverdueAndLoginAgain()
   }
 }
 </script>
