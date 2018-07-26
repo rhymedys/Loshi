@@ -2,11 +2,11 @@
  * @Author: Rhymedys/Rhymedys@gmail.com
  * @Date: 2018-07-25 14:31:48
  * @Last Modified by: Rhymedys
- * @Last Modified time: 2018-07-25 16:09:46
+ * @Last Modified time: 2018-07-26 10:02:51
  */
 
 import wepy from 'wepy'
-import {jSessionIDKey, requestPrefixUrl} from '../config/app'
+import {jSessionIDKey, requestPrefixUrl, jSessionIDExpiresKey} from '../config/app'
 
 /**
  *检查Session是否过期
@@ -16,7 +16,7 @@ import {jSessionIDKey, requestPrefixUrl} from '../config/app'
  */
 async function checkSessionIsOverdue() {
   const checkSessionRes = await wepy.checkSession()
-  const res = checkSessionRes.errMsg !== 'checkSession:ok' || !getSessionInfo()
+  const res = checkSessionRes.errMsg !== 'checkSession:ok' || !getSessionInfo() || new Date().getTime() >= getSessionInfo()[jSessionIDExpiresKey] - 60 * 1000
   res && clearSessionInfo()
   return res
 }
@@ -47,12 +47,13 @@ async function checkSessionIsOverdueAndLoginAgain() {
       })
 
       if (getSessionRes.data.resultCode === 0) {
-        setSessionInfo(getSessionRes.data.data.JSESSIONID)
+        const {data} = getSessionRes.data
+        setSessionInfo(data.JSESSIONID, data.expires)
       }
     }
   }
 
-  return getSessionInfo()
+  return getSessionInfo()[jSessionIDKey]
 }
 
 /**
@@ -60,9 +61,13 @@ async function checkSessionIsOverdueAndLoginAgain() {
  *
  * @export
  * @param {String} jSessionID session值
+ * @param {String} expires session 过期时间时间
  */
-function setSessionInfo(jSessionID) {
-  if (jSessionID) wepy.setStorageSync(jSessionIDKey, jSessionID)
+function setSessionInfo(jSessionID, expires) {
+  if (jSessionID && expires) {
+    wepy.setStorageSync(jSessionIDKey, jSessionID)
+    wepy.setStorageSync(jSessionIDExpiresKey, expires)
+  }
 }
 
 /**
@@ -72,7 +77,10 @@ function setSessionInfo(jSessionID) {
  * @returns {String} session信息
  */
 function getSessionInfo() {
-  return wepy.getStorageSync(jSessionIDKey)
+  return {
+    [jSessionIDKey]: wepy.getStorageSync(jSessionIDKey),
+    [jSessionIDExpiresKey]: wepy.getStorageSync(jSessionIDExpiresKey) || 0
+  }
 }
 
 /**
@@ -82,6 +90,7 @@ function getSessionInfo() {
  */
 function clearSessionInfo() {
   wepy.removeStorageSync(jSessionIDKey)
+  wepy.removeStorageSync(jSessionIDExpiresKey)
 }
 
 export {
