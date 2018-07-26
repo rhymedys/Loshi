@@ -2,7 +2,7 @@
  * @Author: Rhymedys/Rhymedys@gmail.com
  * @Date: 2018-07-25 14:31:48
  * @Last Modified by: Rhymedys
- * @Last Modified time: 2018-07-26 10:02:51
+ * @Last Modified time: 2018-07-26 13:45:22
  */
 
 import wepy from 'wepy'
@@ -16,7 +16,7 @@ import {jSessionIDKey, requestPrefixUrl, jSessionIDExpiresKey} from '../config/a
  */
 async function checkSessionIsOverdue() {
   const checkSessionRes = await wepy.checkSession()
-  const res = checkSessionRes.errMsg !== 'checkSession:ok' || !getSessionInfo() || new Date().getTime() >= getSessionInfo()[jSessionIDExpiresKey] - 60 * 1000
+  const res = checkSessionRes.errMsg !== 'checkSession:ok' || !getSessionInfo()[jSessionIDKey] || new Date().getTime() >= getSessionInfo()[jSessionIDExpiresKey] - 60 * 1000
   res && clearSessionInfo()
   return res
 }
